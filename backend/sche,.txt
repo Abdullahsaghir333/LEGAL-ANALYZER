@@ -1,0 +1,297 @@
+Here’s a **clean, production-style PostgreSQL schema** for your **Legal AI + Fintech SaaS app**. This is designed to support:
+
+* Next.js frontend
+* Node.js backend (main logic)
+* FastAPI AI service (contracts + RAG)
+* Stripe payments
+
+I’ll structure it like something you’d actually use with Prisma or raw SQL.
+
+---
+
+# 🗄️ DATABASE SCHEMA (CORE SYSTEM)
+
+## 👤 1. USERS
+
+```sql
+id              UUID PRIMARY KEY
+name            TEXT
+email           TEXT UNIQUE
+password_hash   TEXT
+role            TEXT  -- 'lawyer' | 'client' | 'admin'
+created_at      TIMESTAMP
+updated_at      TIMESTAMP
+```
+
+---
+
+## 🏢 2. CLIENTS
+
+```sql
+id              UUID PRIMARY KEY
+user_id         UUID REFERENCES users(id)
+name            TEXT
+email           TEXT
+phone           TEXT
+company         TEXT
+created_at      TIMESTAMP
+```
+
+---
+
+## ⚖️ 3. CASES
+
+```sql
+id              UUID PRIMARY KEY
+client_id       UUID REFERENCES clients(id)
+title           TEXT
+description     TEXT
+status          TEXT  -- 'open' | 'closed' | 'pending'
+priority        TEXT  -- 'low' | 'medium' | 'high'
+created_at      TIMESTAMP
+updated_at      TIMESTAMP
+```
+
+---
+
+## 📄 4. CONTRACTS (AI CORE)
+
+```sql
+id              UUID PRIMARY KEY
+case_id         UUID REFERENCES cases(id)
+client_id       UUID REFERENCES clients(id)
+
+file_url        TEXT
+file_name       TEXT
+file_type       TEXT
+
+summary         TEXT
+risk_score      INTEGER  -- 0–100
+
+status          TEXT  -- 'uploaded' | 'analyzed' | 'reviewed'
+
+created_at      TIMESTAMP
+```
+
+---
+
+## 🧠 5. CONTRACT AI ANALYSIS (DETAILED OUTPUT)
+
+```sql
+id              UUID PRIMARY KEY
+contract_id     UUID REFERENCES contracts(id)
+
+summary         TEXT
+key_points      JSONB
+risk_flags      JSONB
+recommendations JSONB
+
+created_at      TIMESTAMP
+```
+
+👉 This is what FastAPI returns after analysis
+
+---
+
+## 💬 6. CONTRACT CHAT (RAG SYSTEM)
+
+```sql
+id              UUID PRIMARY KEY
+contract_id     UUID REFERENCES contracts(id)
+user_id         UUID REFERENCES users(id)
+
+question        TEXT
+answer          TEXT
+
+created_at      TIMESTAMP
+```
+
+---
+
+## ⏱️ 7. TIME TRACKING (FINTECH CORE)
+
+```sql
+id              UUID PRIMARY KEY
+user_id         UUID REFERENCES users(id)
+case_id         UUID REFERENCES cases(id)
+
+description     TEXT
+hours           FLOAT
+rate            FLOAT
+total_amount    FLOAT
+
+start_time      TIMESTAMP
+end_time        TIMESTAMP
+
+created_at      TIMESTAMP
+```
+
+---
+
+## 🧾 8. INVOICES
+
+```sql
+id              UUID PRIMARY KEY
+client_id       UUID REFERENCES clients(id)
+case_id         UUID REFERENCES cases(id)
+
+invoice_number  TEXT UNIQUE
+status          TEXT  -- 'paid' | 'unpaid' | 'pending'
+
+subtotal        FLOAT
+tax             FLOAT
+total           FLOAT
+
+due_date        TIMESTAMP
+created_at      TIMESTAMP
+```
+
+---
+
+## 💳 9. PAYMENTS (STRIPE)
+
+```sql
+id                  UUID PRIMARY KEY
+invoice_id          UUID REFERENCES invoices(id)
+user_id             UUID REFERENCES users(id)
+
+stripe_payment_id   TEXT
+stripe_session_id   TEXT
+
+amount              FLOAT
+currency            TEXT
+
+status              TEXT  -- 'pending' | 'success' | 'failed'
+
+paid_at             TIMESTAMP
+created_at          TIMESTAMP
+```
+
+👉 This connects directly to Stripe
+
+---
+
+## 📊 10. AI INSIGHTS (OPTIONAL BUT POWERFUL)
+
+```sql
+id              UUID PRIMARY KEY
+user_id         UUID REFERENCES users(id)
+
+type            TEXT  -- 'spending' | 'case' | 'contract'
+
+title           TEXT
+content         TEXT
+
+metadata        JSONB
+
+created_at      TIMESTAMP
+```
+
+---
+
+## 🔔 11. NOTIFICATIONS
+
+```sql
+id              UUID PRIMARY KEY
+user_id         UUID REFERENCES users(id)
+
+title           TEXT
+message         TEXT
+
+type            TEXT  -- 'payment' | 'contract' | 'system'
+
+read            BOOLEAN DEFAULT false
+
+created_at      TIMESTAMP
+```
+
+---
+
+## 📁 12. FILE STORAGE (OPTIONAL TRACKING)
+
+```sql
+id              UUID PRIMARY KEY
+user_id         UUID REFERENCES users(id)
+
+file_name       TEXT
+file_url        TEXT
+file_type       TEXT
+
+linked_to       TEXT  -- 'contract' | 'case'
+
+created_at      TIMESTAMP
+```
+
+---
+
+# 🔗 RELATIONSHIP MAP (IMPORTANT)
+
+```text
+Users
+ ├── Clients
+ │     ├── Cases
+ │     │     ├── Contracts
+ │     │     ├── Time Logs
+ │     │     └── Invoices
+ │     │            └── Payments (Stripe)
+ │     └── Notifications
+```
+
+---
+
+# 🧠 HOW AI (FASTAPI) FITS IN
+
+FastAPI does NOT store main data.
+
+It only processes:
+
+* Contracts → analysis → stored in `contract_ai_analysis`
+* Questions → stored in `contract_chat`
+* Summaries → stored in `contracts.summary`
+
+---
+
+# ⚡ OPTIONAL IMPROVEMENTS (PRO LEVEL)
+
+If you want this to look like a real SaaS:
+
+### Add indexing:
+
+* user_id indexes
+* case_id indexes
+* contract_id indexes
+
+### Add audit logs:
+
+```sql
+audit_logs
+- id
+- user_id
+- action
+- timestamp
+```
+
+---
+
+# 🏁 FINAL RESULT
+
+This schema gives you:
+
+* Full **legal SaaS system**
+* Full **fintech billing system**
+* Full **AI contract intelligence layer**
+* Stripe-ready payment system
+* Scalable structure (startup-level)
+
+---
+
+# 🚀 If you want next step
+
+I can now help you:
+
+* convert this into **Prisma schema**
+* design **API endpoints (Node.js)**
+* build **FastAPI contract analysis pipeline**
+* or generate **ER diagram for this database**
+
+Just tell me 👍

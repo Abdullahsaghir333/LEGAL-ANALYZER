@@ -1,5 +1,6 @@
 import { Inter } from "next/font/google";
 import "./globals.css";
+import GoogleProvider from "../components/providers/GoogleProvider";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -29,7 +30,11 @@ export default function RootLayout({ children }) {
           rel="stylesheet"
         />
       </head>
-      <body className="h-full font-sans antialiased">{children}</body>
+      <body className="h-full font-sans antialiased">
+        <GoogleProvider>
+          {children}
+        </GoogleProvider>
+      </body>
     </html>
   );
 }

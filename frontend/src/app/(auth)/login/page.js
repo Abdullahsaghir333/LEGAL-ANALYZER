@@ -2,11 +2,72 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useGoogleLogin } from '@react-oauth/google';
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+
+    try {
+      const res = await fetch("http://localhost:5000/api/users/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("userInfo", JSON.stringify(data));
+        router.push("/dashboard");
+      } else {
+        setError(data.message || "Login failed");
+      }
+    } catch (err) {
+      setError("An error occurred. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      try {
+        setLoading(true);
+        const res = await fetch("http://localhost:5000/api/users/google", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ accessToken: tokenResponse.access_token }),
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          localStorage.setItem("token", data.token);
+          localStorage.setItem("userInfo", JSON.stringify(data));
+          router.push("/dashboard");
+        } else {
+          setError(data.message || "Google Login failed");
+          setLoading(false);
+        }
+      } catch (err) {
+        setError("An error occurred during Google Login.");
+        setLoading(false);
+      }
+    },
+    onError: () => setError("Google Login Failed")
+  });
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -43,7 +104,13 @@ export default function LoginPage() {
               </p>
             </div>
 
-            <form className="space-y-5" onSubmit={(e) => e.preventDefault()}>
+            {error && (
+              <div className="mb-4 p-3 bg-error/10 border border-error/20 rounded-lg text-error text-sm text-center">
+                {error}
+              </div>
+            )}
+
+            <form className="space-y-5" onSubmit={handleLogin}>
               {/* Email */}
               <div className="space-y-2">
                 <label
@@ -112,16 +179,16 @@ export default function LoginPage() {
               </div>
 
               {/* Login Button */}
-              <Link
-                href="/dashboard"
-                id="login-submit"
-                className="w-full py-3 px-6 bg-primary text-on-primary font-medium text-sm rounded-lg
+              <button
+                type="submit"
+                disabled={loading}
+                className={`w-full py-3 px-6 bg-primary text-on-primary font-medium text-sm rounded-lg
                   shadow-primary hover:opacity-90 active:scale-[0.98] transition-all
-                  flex items-center justify-center gap-2"
+                  flex items-center justify-center gap-2 ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
               >
-                Login
-                <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
-              </Link>
+                {loading ? "Logging in..." : "Login"}
+                {!loading && <span className="material-symbols-outlined text-[18px]">arrow_forward</span>}
+              </button>
             </form>
 
             {/* Divider */}
@@ -136,6 +203,8 @@ export default function LoginPage() {
             {/* SSO */}
             <button
               id="login-sso"
+              type="button"
+              onClick={handleGoogleLogin}
               className="w-full py-3 px-6 bg-surface-container-lowest border border-outline-variant/40
                 text-on-surface-variant font-medium text-sm rounded-lg
                 hover:bg-surface-container-low transition-all flex items-center justify-center gap-2"
