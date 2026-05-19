@@ -1,23 +1,74 @@
-# Environment variables
+# ── Environment variables ─────────────────────────────────────────────────
 .env
+.env.*
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
-.env*.local
+**/.env
+**/.env.*
 
-# Node modules
+# ── Python ────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+*.egg
+dist/
+build/
+*.whl
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# Jupyter / IPython
+.ipynb_checkpoints/
+*.ipynb
+
+# ── Data files (too large for Git) ────────────────────────────────────────
+python/data/raw/**/*.json
+python/data/raw/**/*.pdf
+python/data/raw/pdfs/
+python/data/chunks/*.json
+python/data/embeddings/
+python/data/cleaned/
+
+# ── Vector DB persistence ─────────────────────────────────────────────────
+weaviate_data/
+
+# ── Node.js ───────────────────────────────────────────────────────────────
 node_modules/
-
-# Logs
-logs
-*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
+.next/
+out/
 
-# OS metadata
+# ── IDE / Editor ──────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.gemini/
+
+# ── OS metadata ───────────────────────────────────────────────────────────
 .DS_Store
 Thumbs.db
+Desktop.ini
+ehthumbs.db
+
+# ── Logs ──────────────────────────────────────────────────────────────────
+logs/
+*.log
+
+# ── Miscellaneous ─────────────────────────────────────────────────────────
+*.bak
+*.tmp
+*.temp
