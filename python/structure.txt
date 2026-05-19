@@ -1,0 +1,115 @@
+python/
+├── .env
+├── requirements.txt
+│
+├── app/                                (empty)
+│
+├── scripts/
+│   ├── app.py
+│   ├── chunk.py
+│   ├── embedandstore.py
+│   ├── list_models.py
+│   ├── llm_service.py
+│   ├── load_data.py
+│   ├── orchestrator.py
+│   ├── query_engine.py
+│   ├── scrape_data.py
+│   ├── scrape_judgements.py
+│   ├── scrape_paklegaldatabase.py
+│   ├── setup_weaviate.py
+│   ├── test_gemini.py
+│   ├── SCRAPPER_1.PY
+│   ├── SCRAPPER2.py
+│   ├── Scrapper3.py
+│   ├── Scrapper4.py
+│   └── Scrapper5.py
+│
+├── data/
+│   ├── chunks/
+│   │   └── chunked.json
+│   │
+│   ├── cleaned/                        (empty)
+│   │
+│   ├── embeddings/                     (empty)
+│   │
+│   └── raw/
+│       ├── combined.json
+│       ├── dataset1_umair.json
+│       ├── dataset2_ayesha.json
+│       ├── dataset3_lawbridge.json
+│       ├── pdf_data.json
+│       │
+│       ├── pdfs/
+│       │   ├── Child Marriage Restraint_!.pdf
+│       │   ├── Child Marriage Restraint_1.pdf
+│       │   ├── Dissolution of Muslim Marriages.pdf
+│       │   ├── Dowry and Bridal Gifts.pdf
+│       │   ├── Family Courts Act.pdf
+│       │   ├── Muslim Family Laws Ordinance.pdf
+│       │   └── urdu/                   (empty)
+│       │
+│       └── case_law/
+│           ├── high_courts_judgements.json
+│           ├── paklegaldatabase_family.json
+│           │
+│           ├── federal_shariat_court/
+│           │   ├── fsc_judgements.json
+│           │   └── pdfs/
+│           │       ├── Annual_Procurement_Plan.pdf
+│           │       ├── Annual_Report.pdf
+│           │       ├── Books___Articles.pdf
+│           │       ├── Cause_List.pdf
+│           │       ├── Chapter_3-A.pdf
+│           │       ├── Circulars.pdf
+│           │       ├── Download.pdf
+│           │       ├── Former_Chief_Justices.pdf
+│           │       ├── Former_Judges.pdf
+│           │       ├── Grievance_Redressal_Committee.pdf
+│           │       ├── Human_Rights_Cell.pdf
+│           │       ├── Laws.pdf
+│           │       ├── Notifications.pdf
+│           │       ├── Orders.pdf
+│           │       ├── Press_Releases.pdf
+│           │       ├── Procedure_Rules.pdf
+│           │       ├── Public_Notice.pdf
+│           │       ├── Roster.pdf
+│           │       ├── Telephone_Directory.pdf
+│           │       ├── Tenders.pdf
+│           │       ├── home.pdf
+│           │       └── اردو.pdf
+│           │
+│           ├── lahore_high_court/
+│           │   ├── lhc_judgements.json
+│           │   ├── bulletins/
+│           │   │   ├── Bulletinfrom16.05.2024to31.05.2024_75a1.pdf
+│           │   │   ├── Bulletinfrom16.12.2023to31.12.2023_3d1a.pdf
+│           │   │   └── ConsolidatedBulletinfrom01.01.2024till29.02.2024_b9d8.pdf
+│           │   └── pdfs/
+│           │       ├── 2020LHC127.pdf
+│           │       └── 2023LHC427.pdf
+│           │
+│           ├── molaw/
+│           │   ├── molaw_acts.json
+│           │   └── pdfs/
+│           │       ├── Anti_Rape_Trial_Procedure_Rules.pdf
+│           │       ├── Pakistan_Citizenship_Act__1951.pdf
+│           │       ├── Rules_Under_Muslim_Family_Laws_Ordinance__1961.pdf
+│           │       └── The_West_Pakistan_Family_Courts_Act__1964.pdf
+│           │
+│           ├── pakistan_code/
+│           │   ├── pakistan_code_acts.json
+│           │   └── pdfs/
+│           │       └── The_Pakistan_CodeMinistry_of_Law_and_Justice.pdf
+│           │
+│           ├── sindh_high_court/
+│           │   ├── shc_judgements.json
+│           │   └── pdfs/               (empty)
+│           │
+│           └── supreme_court/
+│               ├── supreme_court_judgements.json
+│               └── pdfs/               (empty)
+│
+├── vector_db/
+│   └── docker-compose.yml
+│
+└── venv/                               (virtual environment - excluded)
