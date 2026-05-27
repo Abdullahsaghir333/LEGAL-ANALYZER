@@ -1,0 +1,73 @@
+# LEGAL ANALYZER & JURISFLOW - COMPREHENSIVE PAGE STRUCTURE
+
+This document outlines the complete page architecture for the platform, divided into two distinct portals: The Lawyer Portal and the Client Portal. It integrates the Pakistani Family Law RAG system and a request/chat mechanism between clients and lawyers.
+
+====================================================================
+👨‍⚖️ PART 1: THE LAWYER PORTAL (Legal Practice Management + AI)
+====================================================================
+The lawyer portal is designed to handle case management, client requests, and advanced legal research using the RAG backend.
+
+1. /lawyer/dashboard
+   - Overview of the firm: Active cases, total revenue, upcoming hearings.
+   - Pending alerts and system notifications.
+
+2. /lawyer/client-requests (NEW)
+   - Inbox showing new legal representation requests from prospective clients on the platform.
+   - Ability to "Accept" or "Decline" a client's request based on case details.
+
+3. /lawyer/chat (NEW)
+   - Secure messaging system that activates ONLY after the lawyer accepts a client's request.
+   - Real-time chat with clients for gathering evidence, sharing updates, or negotiating fees.
+
+4. /lawyer/cases & /lawyer/clients
+   - Full CRM to manage ongoing Family Law cases (Khula, Custody, Maintenance).
+   - Track court names, next hearing dates, and case statuses.
+
+5. /lawyer/ai-assistant (RAG INTEGRATION)
+   - The core AI Legal Researcher connected to the FastAPI backend (Weaviate + Gemini).
+   - Lawyers can ask deep, technical legal questions (e.g., "Latest SC rulings on child custody in Punjab").
+   - Returns highly accurate answers with precise citations (Act Name, Section, PLD citations).
+
+6. /lawyer/summarizer
+   - AI tool for the lawyer to upload 50+ page court judgements and get a concise summary in seconds.
+
+7. /lawyer/billing & /lawyer/contracts
+   - Draft settlement agreements and manage invoices.
+
+====================================================================
+👤 PART 2: THE CLIENT PORTAL (Marketplace + Case Tracking)
+====================================================================
+The client portal allows normal users to find legal help, ask basic AI questions, and communicate with their hired lawyer.
+
+1. /client/explore-lawyers (NEW)
+   - A directory/marketplace showing all available lawyers on the platform.
+   - Displays lawyer profiles, expertise (e.g., Family Law Specialist), and ratings.
+   - "Send Request" button allowing the client to send a brief description of their issue to a chosen lawyer.
+
+2. /client/dashboard
+   - Simple view showing the status of their active case once a lawyer accepts them.
+   - Displays "Next Hearing Date" and "Current Status".
+
+3. /client/chat (NEW)
+   - Opens up once the lawyer accepts the request.
+   - Direct line to their lawyer to ask questions, send documents (like Nikah Nama), and get updates securely.
+
+4. /client/ai-assistant (LIMITED RAG INTEGRATION)
+   - A client-facing version of the RAG system.
+   - Clients can ask basic legal questions (e.g., "What is the notice period for divorce in Pakistan?").
+   - The backend responds in English or Urdu using the exact legal statutes, but with a STRICT and prominent disclaimer: "⚠️ This is legal information, not legal advice. Please consult your lawyer."
+   - Helps educate the client before they even speak to the lawyer.
+
+5. /client/documents & /client/invoices
+   - Read-only area to download drafted contracts, court orders, and pay legal fees via Stripe.
+
+====================================================================
+🔄 THE WORKFLOW LOOP
+====================================================================
+1. Client logs in and uses `/client/ai-assistant` to understand their legal rights (RAG).
+2. Client goes to `/client/explore-lawyers` and finds a suitable Family Law expert.
+3. Client clicks "Send Request".
+4. Lawyer receives the request on `/lawyer/client-requests`.
+5. Lawyer clicks "Accept".
+6. A channel is opened on `/lawyer/chat` and `/client/chat` for them to communicate.
+7. Lawyer uses `/lawyer/ai-assistant` (RAG) to build a strong legal strategy based on actual case law.

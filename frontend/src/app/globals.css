@@ -56,6 +56,7 @@
 
   --color-outline: #777587;
   --color-outline-variant: #c7c4d8;
+  --color-scrim: #000000;
 
   /* --- Semantic aliases --- */
   --color-success: #16a34a;

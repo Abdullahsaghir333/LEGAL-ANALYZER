@@ -21,6 +21,27 @@ const userSchema = new mongoose.Schema(
       enum: ['lawyer', 'client', 'admin'],
       default: 'client',
     },
+    // Lawyer specific fields
+    expertise: {
+      type: [String],
+      default: [],
+    },
+    experience: {
+      type: String,
+      default: "0 Years",
+    },
+    location: {
+      type: String,
+      default: "Unspecified",
+    },
+    bio: {
+      type: String,
+      default: "",
+    },
+    rate: {
+      type: String,
+      default: "Contact for pricing",
+    },
   },
   {
     timestamps: true,

@@ -9,6 +9,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [role, setRole] = useState("client");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -21,6 +22,7 @@ export default function LoginPage() {
     try {
       const res = await fetch("http://localhost:5000/api/users/login", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
@@ -28,9 +30,12 @@ export default function LoginPage() {
       const data = await res.json();
 
       if (res.ok) {
-        localStorage.setItem("token", data.token);
         localStorage.setItem("userInfo", JSON.stringify(data));
-        router.push("/dashboard");
+        if (data.role === "lawyer" || data.role === "admin") {
+          router.push("/dashboard");
+        } else {
+          router.push("/client/dashboard");
+        }
       } else {
         setError(data.message || "Login failed");
       }
@@ -47,16 +52,20 @@ export default function LoginPage() {
         setLoading(true);
         const res = await fetch("http://localhost:5000/api/users/google", {
           method: "POST",
+          credentials: "include",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ accessToken: tokenResponse.access_token }),
+          body: JSON.stringify({ accessToken: tokenResponse.access_token, role }),
         });
 
         const data = await res.json();
 
         if (res.ok) {
-          localStorage.setItem("token", data.token);
           localStorage.setItem("userInfo", JSON.stringify(data));
-          router.push("/dashboard");
+          if (data.role === "lawyer" || data.role === "admin") {
+            router.push("/dashboard");
+          } else {
+            router.push("/client/dashboard");
+          }
         } else {
           setError(data.message || "Google Login failed");
           setLoading(false);
@@ -175,6 +184,24 @@ export default function LoginPage() {
                       {showPassword ? "visibility_off" : "visibility"}
                     </span>
                   </button>
+                </div>
+              </div>
+
+              {/* Role */}
+              <div className="space-y-2">
+                <label htmlFor="login-role" className="text-sm font-medium text-on-surface-variant block tracking-wide">
+                  Your Role
+                </label>
+                <div className="relative">
+                  <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline text-[20px]">work</span>
+                  <select id="login-role"
+                    value={role} onChange={(e) => setRole(e.target.value)}
+                    className="w-full pl-12 pr-10 py-3 bg-surface-container-low border border-outline-variant/40 rounded-lg text-on-surface appearance-none focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all">
+                    <option value="client">Client</option>
+                    <option value="lawyer">Lawyer</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                  <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline text-[20px] pointer-events-none">expand_more</span>
                 </div>
               </div>
 

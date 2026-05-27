@@ -2,18 +2,20 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState, useEffect } from "react";
 
 const mainNavItems = [
   { label: "Dashboard", icon: "dashboard", href: "/dashboard" },
+  { label: "Client Requests", icon: "mark_email_unread", href: "/client-requests" },
   { label: "Clients", icon: "group", href: "/clients" },
   { label: "Cases", icon: "business_center", href: "/cases" },
-  { label: "Contracts", icon: "description", href: "/contracts" },
   { label: "Billing", icon: "receipt_long", href: "/billing" },
   { label: "Analytics", icon: "analytics", href: "/analytics" },
 ];
 
 const aiNavItems = [
-  { label: "AI Assistant", icon: "smart_toy", href: "/ai-assistant" },
+  { label: "Family Law AI", icon: "family_restroom", href: "/ai-assistant" },
+  { label: "Lawyer AI", icon: "psychology", href: "/lawyer-assistant" },
   { label: "Summarizer", icon: "summarize", href: "/summarizer" },
 ];
 
@@ -22,8 +24,23 @@ const bottomNavItems = [
   { label: "Settings", icon: "settings", href: "/settings" },
 ];
 
+const clientNavItems = [
+  { label: "Dashboard", icon: "dashboard", href: "/client/dashboard" },
+  { label: "My Cases", icon: "business_center", href: "/client/cases" },
+  { label: "Explore Lawyers", icon: "search", href: "/client/explore-lawyers" },
+  { label: "Family Law AI", icon: "family_restroom", href: "/client/ai-assistant" },
+];
+
 export default function Sidebar({ collapsed = false, onToggle }) {
   const pathname = usePathname();
+  const [role, setRole] = useState(null);
+
+  useEffect(() => {
+    const userInfo = JSON.parse(localStorage.getItem("userInfo") || "{}");
+    if (userInfo?.role) {
+      setRole(userInfo.role);
+    }
+  }, []);
 
   const isActive = (href) => {
     if (href === "/dashboard") return pathname === "/dashboard" || pathname === "/";
@@ -69,7 +86,7 @@ export default function Sidebar({ collapsed = false, onToggle }) {
     >
       {/* Brand */}
       <div className={`px-4 py-6 ${collapsed ? "px-3" : "px-6"}`}>
-        <Link href="/dashboard" className="flex items-center gap-3 group">
+        <Link href={role === "client" ? "/client/dashboard" : "/dashboard"} className="flex items-center gap-3 group">
           <div className="w-10 h-10 bg-primary-container rounded-xl flex items-center justify-center shadow-sm shrink-0">
             <span className="material-symbols-outlined text-white text-[20px] filled">
               gavel
@@ -91,23 +108,27 @@ export default function Sidebar({ collapsed = false, onToggle }) {
       {/* Main Navigation */}
       <nav className="flex-1 px-3 space-y-1 overflow-y-auto">
         <div className="space-y-0.5">
-          {mainNavItems.map((item) => (
+          {(role === 'client' ? clientNavItems : mainNavItems).map((item) => (
             <NavItem key={item.href} item={item} />
           ))}
         </div>
 
-        {/* AI Section */}
-        {!collapsed && (
-          <p className="px-4 pt-6 pb-2 text-[10px] uppercase tracking-[0.15em] text-outline font-bold">
-            AI Tools
-          </p>
+        {/* AI Section (Only for Lawyers) */}
+        {role !== 'client' && (
+          <>
+            {!collapsed && (
+              <p className="px-4 pt-6 pb-2 text-[10px] uppercase tracking-[0.15em] text-outline font-bold">
+                AI Tools
+              </p>
+            )}
+            {collapsed && <div className="my-4 mx-3 h-px bg-outline-variant/40" />}
+            <div className="space-y-0.5">
+              {aiNavItems.map((item) => (
+                <NavItem key={item.href} item={item} />
+              ))}
+            </div>
+          </>
         )}
-        {collapsed && <div className="my-4 mx-3 h-px bg-outline-variant/40" />}
-        <div className="space-y-0.5">
-          {aiNavItems.map((item) => (
-            <NavItem key={item.href} item={item} />
-          ))}
-        </div>
 
         {/* Bottom section separator */}
         {!collapsed && (
@@ -125,19 +146,21 @@ export default function Sidebar({ collapsed = false, onToggle }) {
 
       {/* Bottom Actions */}
       <div className="p-3 space-y-3 border-t border-outline-variant/20">
-        <Link
-          href="/cases/new"
-          id="nav-create-case"
-          className={`
-            flex items-center justify-center gap-2 py-3 bg-primary text-on-primary rounded-xl
-            font-semibold text-sm shadow-primary hover:opacity-90 active:scale-[0.98]
-            transition-all duration-200
-            ${collapsed ? "px-3" : "px-4"}
-          `}
-        >
-          <span className="material-symbols-outlined text-[20px]">add_circle</span>
-          {!collapsed && <span>Create New Case</span>}
-        </Link>
+        {role !== 'client' && (
+          <Link
+            href="/client-requests"
+            id="nav-client-requests"
+            className={`
+              flex items-center justify-center gap-2 py-3 bg-primary text-on-primary rounded-xl
+              font-semibold text-sm shadow-primary hover:opacity-90 active:scale-[0.98]
+              transition-all duration-200
+              ${collapsed ? "px-3" : "px-4"}
+            `}
+          >
+            <span className="material-symbols-outlined text-[20px]">mark_email_unread</span>
+            {!collapsed && <span>Client Requests</span>}
+          </Link>
+        )}
 
         <Link
           href="/help"

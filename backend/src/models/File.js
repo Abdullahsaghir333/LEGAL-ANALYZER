@@ -24,6 +24,19 @@ const fileSchema = new mongoose.Schema(
       enum: ['contract', 'case', 'other'],
       default: 'other',
     },
+    case_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Case',
+    },
+    uploaded_by: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
+    extracted_text: {
+      type: String,
+      default: "",
+    },
   },
   {
     timestamps: true,

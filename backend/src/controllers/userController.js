@@ -14,12 +14,20 @@ export const authUser = asyncHandler(async (req, res) => {
   const user = await User.findOne({ email });
 
   if (user && (await user.matchPassword(password))) {
+    const token = generateToken(user._id);
+    
+    res.cookie('jwt', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV !== 'development',
+      sameSite: 'strict',
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+    });
+
     res.json({
       _id: user._id,
       name: user.name,
       email: user.email,
       role: user.role,
-      token: generateToken(user._id),
     });
   } else {
     res.status(401);
@@ -48,12 +56,20 @@ export const registerUser = asyncHandler(async (req, res) => {
   });
 
   if (user) {
+    const token = generateToken(user._id);
+
+    res.cookie('jwt', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV !== 'development',
+      sameSite: 'strict',
+      maxAge: 30 * 24 * 60 * 60 * 1000,
+    });
+
     res.status(201).json({
       _id: user._id,
       name: user.name,
       email: user.email,
       role: user.role,
-      token: generateToken(user._id),
     });
   } else {
     res.status(400);
@@ -84,7 +100,7 @@ export const getUserProfile = asyncHandler(async (req, res) => {
 // @route   POST /api/users/google
 // @access  Public
 export const googleLogin = asyncHandler(async (req, res) => {
-  const { accessToken } = req.body;
+  const { accessToken, role = 'client' } = req.body;
   
   try {
     // Fetch user info from Google using the access token
@@ -107,19 +123,46 @@ export const googleLogin = asyncHandler(async (req, res) => {
         name,
         email,
         password_hash: sub, // Dummy password for OAuth users, will be hashed
-        role: 'client',
+        role: role,
       });
     }
     
+    const token = generateToken(user._id);
+
+    res.cookie('jwt', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV !== 'development',
+      sameSite: 'strict',
+      maxAge: 30 * 24 * 60 * 60 * 1000,
+    });
+
     res.json({
       _id: user._id,
       name: user.name,
       email: user.email,
       role: user.role,
-      token: generateToken(user._id),
     });
   } catch (error) {
     res.status(401);
     throw new Error('Invalid Google token');
   }
+});
+
+// @desc    Get all lawyers
+// @route   GET /api/users/lawyers
+// @access  Private
+export const getLawyers = asyncHandler(async (req, res) => {
+  const lawyers = await User.find({ role: 'lawyer' }).select('-password_hash');
+  res.json(lawyers);
+});
+
+// @desc    Logout user / clear cookie
+// @route   POST /api/users/logout
+// @access  Private
+export const logoutUser = asyncHandler(async (req, res) => {
+  res.cookie('jwt', '', {
+    httpOnly: true,
+    expires: new Date(0),
+  });
+  res.status(200).json({ message: 'Logged out successfully' });
 });

@@ -98,7 +98,18 @@ class LegalQueryEngine:
             if parent_id:
                 parent = self.parent_lookup.get(parent_id)
                 if parent:
+                    # Parent chunks can be massive (e.g. 800k chars), so we truncate them
+                    # to prevent exceeding LLM context windows and API rate limits.
                     parent_text = parent["text"]
+                    if len(parent_text) > 4000:
+                        # Find where the child text occurs in the parent
+                        child_pos = parent_text.find(child_text[:100])
+                        if child_pos != -1:
+                            start_idx = max(0, child_pos - 1000)
+                            end_idx = min(len(parent_text), child_pos + len(child_text) + 2000)
+                            parent_text = "... " + parent_text[start_idx:end_idx] + " ..."
+                        else:
+                            parent_text = parent_text[:4000] + " ... (truncated)"
 
             result = {
                 "score":        obj.metadata.score,

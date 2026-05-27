@@ -1,0 +1,91 @@
+# LegalAnalyzer / JurisFlow Frontend - UI Pages Overview
+
+This document outlines all the static UI pages currently in the Next.js `src/app` directory, along with a description of what each page does and what backend integrations will be needed for each.
+
+---
+
+## 🔐 Authentication Pages (`src/app/(auth)`)
+
+### 1. `/login`
+- **Purpose**: Allows existing users to sign into the platform.
+- **Backend Integration**: 
+  - Needs POST request to `/api/users/login` or Google OAuth callback.
+  - Must store the JWT token (in cookies or local storage) and manage the user session.
+
+### 2. `/signup`
+- **Purpose**: Registration page for new users to create an account.
+- **Backend Integration**:
+  - Needs POST request to `/api/users/register`.
+  - Should handle validation errors (e.g., email already in use).
+
+---
+
+## 📊 Dashboard & Core Features (`src/app/(dashboard)`)
+
+### 3. `/dashboard`
+- **Purpose**: The main landing page after logging in. Shows high-level KPIs, recent activity, and a snapshot of revenue/cases.
+- **Backend Integration**:
+  - Needs a GET request to a summary API (e.g., `/api/dashboard/stats`) to fetch total clients, active cases, recent notifications, and revenue metrics.
+
+### 4. `/clients`
+- **Purpose**: A CRM page to view, add, edit, and delete client information.
+- **Backend Integration**:
+  - Needs full CRUD on `/api/clients`.
+  - GET all clients for the table.
+  - POST to create a new client (via a modal or form).
+  - PUT/DELETE for updating/removing clients.
+
+### 5. `/cases`
+- **Purpose**: Manage ongoing and past legal cases, tracking their status, assigned clients, and deadlines.
+- **Backend Integration**:
+  - Needs full CRUD on `/api/cases`.
+  - Fetch cases and display them in a list or kanban board.
+  - Tie cases to specific client IDs.
+
+### 6. `/contracts`
+- **Purpose**: Contract repository and drafting tool. Displays existing contracts and their statuses (draft, signed, pending).
+- **Backend Integration**:
+  - CRUD on `/api/contracts`.
+  - File upload capabilities if users are uploading PDF contracts.
+
+### 7. `/billing`
+- **Purpose**: Invoicing and payment tracking. Shows generated invoices, paid amounts, and outstanding balances.
+- **Backend Integration**:
+  - CRUD on `/api/invoices`.
+  - Integration with Stripe (which is in your backend `package.json`) to handle payments and subscriptions.
+
+### 8. `/analytics`
+- **Purpose**: Detailed charts and graphs regarding case success rates, monthly revenue, and firm performance.
+- **Backend Integration**:
+  - Aggregation routes in the backend to supply chart data (e.g., revenue grouped by month).
+
+---
+
+## 🤖 AI Features
+
+### 9. `/ai-assistant`
+- **Purpose**: The chat interface for the LegalAnalyzer RAG system. Users ask legal questions and get cited answers.
+- **Backend Integration**:
+  - Connects to your Python FastAPI backend (`/api/query`) instead of the Node.js backend.
+  - Needs a chat UI that maps state to the Python API request/response format.
+
+### 10. `/summarizer`
+- **Purpose**: A specialized tool to paste large legal texts or upload documents and get a concise summary.
+- **Backend Integration**:
+  - POST request to a summarization endpoint (likely on the Python backend or using the Gemini API directly from Node).
+
+---
+
+## ⚙️ Utilities
+
+### 11. `/notifications`
+- **Purpose**: Inbox for system alerts, case updates, or messages.
+- **Backend Integration**:
+  - GET `/api/notifications` to fetch the user's alerts. 
+  - PATCH to mark notifications as "read".
+
+### 12. `/settings`
+- **Purpose**: User profile management, password resets, and app preferences.
+- **Backend Integration**:
+  - GET/PUT to `/api/users/profile`.
+  - Handling profile picture uploads, password changes, etc.

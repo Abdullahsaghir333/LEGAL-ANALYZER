@@ -1,134 +1,317 @@
 "use client";
 
-import { useState } from "react";
-import { Button, FilterChip } from "@/components/ui";
+import { useRef, useState } from "react";
+import { Button, FilterChip, PageHeader } from "@/components/ui";
+import { apiFetch } from "@/lib/api";
 
 export default function SummarizerPage() {
   const [summaryLength, setSummaryLength] = useState("Medium");
   const [tone, setTone] = useState("Professional");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [executiveSummary, setExecutiveSummary] = useState("");
+  const [keyPoints, setKeyPoints] = useState([]);
+  const [documentText, setDocumentText] = useState("");
+  const [fileName, setFileName] = useState("");
+  const fileInputRef = useRef(null);
+
+  const runSummarizer = async (text) => {
+    if (!text?.trim()) return;
+    setIsLoading(true);
+    setError("");
+    try {
+      const res = await apiFetch("/ai/summarize", {
+        method: "POST",
+        body: JSON.stringify({ text, summaryLength, tone }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.message || "Summarization failed");
+        return;
+      }
+      setExecutiveSummary(data.executiveSummary || "");
+      setKeyPoints(data.keyPoints || []);
+    } catch (e) {
+      console.error(e);
+      setError("Could not reach summarizer service. Ensure Express (:5000) and Python (:8000) are running.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleFile = async (file) => {
+    if (!file) return;
+    setIsLoading(true);
+    setError("");
+    setExecutiveSummary("");
+    setKeyPoints([]);
+    setFileName(file.name);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await apiFetch("/ai/chats/upload", { method: "POST", body: formData });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.message || "PDF extraction failed");
+        return;
+      }
+      setDocumentText(data.text || "");
+      await runSummarizer(data.text || "");
+    } catch (e) {
+      console.error(e);
+      setError("Upload failed. Please try again.");
+    } finally {
+      setIsLoading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const handlePasteText = () => {
+    const text = prompt("Paste the legal document text to summarize:");
+    if (text?.trim()) {
+      setFileName("");
+      setDocumentText(text);
+      runSummarizer(text);
+    }
+  };
+
+  const downloadSummary = () => {
+    if (!executiveSummary && !keyPoints.length) return;
+    const body = [
+      "EXECUTIVE SUMMARY",
+      executiveSummary,
+      "",
+      "KEY PROVISIONS",
+      ...keyPoints.map((p, i) => `${i + 1}. ${p}`),
+    ].join("\n");
+    const blob = new Blob([body], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "summary.txt";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
-    <div className="p-6 lg:p-8 max-w-7xl mx-auto space-y-6 animate-fade-in">
-      <h1 className="text-[30px] font-semibold text-on-surface tracking-tight">Document Summarizer</h1>
+    <div className="p-6 lg:p-8 w-full min-w-0 max-w-7xl mx-auto space-y-6 animate-fade-in">
+      <PageHeader
+        title="Document Summarizer"
+        subtitle="Upload a PDF or paste text to generate an AI-powered legal summary."
+        breadcrumb={["Dashboard", "Summarizer"]}
+      />
 
-      {/* Upload Zone */}
-      <div className="bg-surface-container-lowest border-2 border-dashed border-outline-variant/40 rounded-2xl p-12 text-center hover:border-primary/30 transition-colors cursor-pointer">
-        <div className="w-14 h-14 bg-surface-container-low rounded-2xl flex items-center justify-center mx-auto mb-4">
-          <span className="material-symbols-outlined text-[28px] text-on-surface-variant">upload_file</span>
-        </div>
-        <h3 className="text-xl font-semibold text-on-surface">Upload Legal Document</h3>
-        <p className="text-sm text-on-surface-variant mt-2 max-w-md mx-auto">
-          Drag and drop your PDF, DOCX, or text files here to begin the AI-powered summarization process. Supported up to 50MB per document.
-        </p>
-        <div className="flex items-center justify-center gap-3 mt-6">
-          <Button variant="primary" icon="upload_file">Select File</Button>
-          <Button variant="secondary">Past Text</Button>
+      {/* Upload zone */}
+      <div className="w-full bg-surface-container-lowest border-2 border-dashed border-outline-variant/50 rounded-2xl hover:border-primary/40 transition-colors">
+        <div className="w-full px-6 py-10 sm:py-12">
+          <div className="mx-auto w-full max-w-2xl text-center">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf,application/pdf"
+              className="hidden"
+              onChange={(e) => handleFile(e.target.files?.[0])}
+            />
+
+            <div className="w-16 h-16 bg-primary-fixed/30 rounded-2xl flex items-center justify-center mx-auto mb-5">
+              <span className="material-symbols-outlined text-[32px] text-primary">upload_file</span>
+            </div>
+
+            <h2 className="text-xl sm:text-2xl font-bold text-on-surface">Upload legal document</h2>
+
+            <p
+              className="mt-3 text-sm sm:text-base text-on-surface-variant leading-relaxed"
+              style={{ width: "100%", wordBreak: "normal" }}
+            >
+              Upload a PDF to extract and summarize it with AI. You can also paste plain text directly.
+              Maximum file size 50MB.
+            </p>
+
+            {fileName && (
+              <p className="mt-3 text-sm font-medium text-primary">
+                Selected: {fileName}
+              </p>
+            )}
+
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mt-8">
+              <Button
+                variant="primary"
+                icon={isLoading ? "hourglass_empty" : "upload_file"}
+                disabled={isLoading}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                {isLoading ? "Processing..." : "Upload PDF"}
+              </Button>
+              <Button variant="secondary" icon="content_paste" disabled={isLoading} onClick={handlePasteText}>
+                Paste text
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Document View + Summary */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        {/* Original Document */}
-        <div className="lg:col-span-3 bg-surface-container-lowest rounded-xl border border-outline-variant/30 shadow-card overflow-hidden">
-          <div className="px-6 py-4 border-b border-outline-variant/15 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-[20px] text-on-surface-variant">description</span>
-              <span className="text-sm font-bold text-on-surface-variant uppercase tracking-wider">Original Document</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <button className="p-1.5 hover:bg-surface-container-low rounded transition-colors">
-                <span className="material-symbols-outlined text-[18px] text-on-surface-variant">zoom_in</span>
-              </button>
-              <button className="p-1.5 hover:bg-surface-container-low rounded transition-colors">
-                <span className="material-symbols-outlined text-[18px] text-on-surface-variant">zoom_out</span>
-              </button>
-              <button className="p-1.5 hover:bg-surface-container-low rounded transition-colors">
-                <span className="material-symbols-outlined text-[18px] text-on-surface-variant">fullscreen</span>
-              </button>
-            </div>
-          </div>
-          <div className="p-8 prose prose-sm max-w-none">
-            <h2 className="text-xl font-bold text-on-surface">MASTER SERVICE AGREEMENT</h2>
-            <p className="text-sm text-on-surface/80 leading-relaxed mt-4">
-              This Master Service Agreement (&quot;Agreement&quot;) is entered into as of October 12, 2023, by and between LexAgile Systems Inc., a Delaware corporation (&quot;Provider&quot;), and Global FinTech Solutions LLC (&quot;Client&quot;).
-            </p>
-            <h3 className="text-base font-bold text-on-surface mt-6">1. Services.</h3>
-            <p className="text-sm text-on-surface/80 leading-relaxed">
-              Provider shall provide the professional services described in one or more Statements of Work (&quot;SOW&quot;) executed by the parties. Each SOW shall be subject to the terms and conditions of this Agreement. Provider will perform the services in a professional and workmanlike manner in accordance with generally recognized industry standards.
-            </p>
-            <h3 className="text-base font-bold text-on-surface mt-6">2. Fees and Payment.</h3>
-            <p className="text-sm text-on-surface/80 leading-relaxed">
-              Client shall pay Provider the fees set forth in the applicable SOW. Unless otherwise stated in an SOW, all invoices are due and payable within thirty (30) days of the invoice date. Late payments shall bear interest at the rate of 1.5% per month or the maximum rate permitted by law, whichever is lower.
-            </p>
-            <h3 className="text-base font-bold text-on-surface mt-6">3. Term and Termination.</h3>
-            <p className="text-sm text-on-surface/80 leading-relaxed">
-              This Agreement shall commence on the Effective Date and continue until terminated by either party. Either party may terminate this Agreement for convenience upon sixty (60) days&apos; written notice to the other party.
-            </p>
-          </div>
+      {error && (
+        <div className="w-full p-4 rounded-xl bg-error/10 border border-error/20 text-error text-sm text-center">
+          {error}
         </div>
+      )}
 
-        {/* Summary Panel */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Controls */}
-          <div className="bg-surface-container-lowest rounded-xl border border-outline-variant/30 shadow-card p-6">
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Summary Length</span>
-              <div className="flex gap-1">
-                {["Short", "Medium", "Detailed"].map((len) => (
-                  <FilterChip key={len} label={len} active={summaryLength === len} onClick={() => setSummaryLength(len)} />
-                ))}
-              </div>
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] gap-6 w-full min-w-0">
+        {/* Original document */}
+        <section className="w-full min-w-0 bg-surface-container-lowest rounded-xl border border-outline-variant/30 shadow-card overflow-hidden flex flex-col min-h-[420px]">
+          <div className="px-6 py-4 border-b border-outline-variant/15 shrink-0 w-full">
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-[20px] text-on-surface-variant shrink-0">description</span>
+              <span className="text-sm font-bold text-on-surface-variant uppercase tracking-wider">
+                Original document
+              </span>
+              {documentText && (
+                <span className="ml-auto text-xs text-on-surface-variant">
+                  {documentText.length.toLocaleString()} characters
+                </span>
+              )}
             </div>
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Tone</span>
-              <div className="flex items-center gap-3">
-                <span className="text-sm text-on-surface-variant">Simple</span>
-                <button
-                  onClick={() => setTone(tone === "Professional" ? "Simple" : "Professional")}
-                  className={`w-10 h-6 rounded-full transition-colors ${tone === "Professional" ? "bg-primary" : "bg-outline-variant"} relative`}
+          </div>
+          <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 min-h-0 w-full min-w-0">
+            {documentText ? (
+              <div
+                className="w-full min-w-0 rounded-lg bg-surface-container-low/50 border border-outline-variant/20 p-5 sm:p-6"
+                style={{ width: "100%", maxWidth: "100%", boxSizing: "border-box" }}
+              >
+                <div
+                  className="text-sm text-on-surface leading-7"
+                  style={{
+                    width: "100%",
+                    maxWidth: "100%",
+                    whiteSpace: "pre-wrap",
+                    wordBreak: "break-word",
+                    overflowWrap: "break-word",
+                    wordWrap: "break-word",
+                  }}
                 >
-                  <span className={`block w-4 h-4 rounded-full bg-white shadow transition-transform ${tone === "Professional" ? "translate-x-5" : "translate-x-1"}`} />
-                </button>
-                <span className="text-sm font-medium text-on-surface">Professional</span>
+                  {documentText.slice(0, 12000)}
+                  {documentText.length > 12000 ? "\n\n…(truncated for display)" : ""}
+                </div>
               </div>
+            ) : (
+              <div className="min-h-[280px] flex flex-col items-center justify-center w-full">
+                <div className="text-center px-6" style={{ width: "100%", maxWidth: "24rem" }}>
+                  <span className="material-symbols-outlined text-[48px] text-outline mb-3 block">article</span>
+                  <p
+                    className="text-sm text-on-surface-variant leading-relaxed"
+                    style={{ width: "100%", wordBreak: "normal" }}
+                  >
+                    Your extracted document text will appear here after you upload a PDF or paste content.
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* Summary panel */}
+        <div className="w-full min-w-0 space-y-6">
+          <div className="bg-surface-container-lowest rounded-xl border border-outline-variant/30 shadow-card p-6 w-full">
+            <div className="space-y-5">
+              <div>
+                <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider block mb-3">
+                  Summary length
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  {["Short", "Medium", "Detailed"].map((len) => (
+                    <FilterChip
+                      key={len}
+                      label={len}
+                      active={summaryLength === len}
+                      onClick={() => setSummaryLength(len)}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider block mb-3">
+                  Tone
+                </span>
+                <div className="flex items-center gap-3">
+                  <span className={`text-sm ${tone === "Simple" ? "font-semibold text-on-surface" : "text-on-surface-variant"}`}>
+                    Simple
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setTone(tone === "Professional" ? "Simple" : "Professional")}
+                    className={`w-11 h-6 rounded-full transition-colors shrink-0 ${
+                      tone === "Professional" ? "bg-primary" : "bg-outline-variant"
+                    } relative`}
+                    aria-label="Toggle tone"
+                  >
+                    <span
+                      className={`absolute top-1 block w-4 h-4 rounded-full bg-white shadow transition-all ${
+                        tone === "Professional" ? "left-6" : "left-1"
+                      }`}
+                    />
+                  </button>
+                  <span className={`text-sm ${tone === "Professional" ? "font-semibold text-on-surface" : "text-on-surface-variant"}`}>
+                    Professional
+                  </span>
+                </div>
+              </div>
+
+              <Button
+                variant="primary"
+                className="w-full"
+                icon={isLoading ? "hourglass_empty" : "refresh"}
+                disabled={isLoading || !documentText}
+                onClick={() => runSummarizer(documentText)}
+              >
+                {isLoading ? "Generating..." : "Regenerate summary"}
+              </Button>
             </div>
-            <Button variant="primary" className="w-full mt-4" icon="refresh">Regenerate Summary</Button>
           </div>
 
-          {/* AI Summary */}
-          <div className="bg-surface-container-lowest rounded-xl border border-outline-variant/30 shadow-card p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-primary text-[20px]">auto_awesome</span>
-                <span className="text-xs font-bold text-primary uppercase tracking-wider">AI Insight Summary</span>
+          <div className="bg-surface-container-lowest rounded-xl border border-outline-variant/30 shadow-card p-6 w-full">
+            <div className="flex items-start justify-between gap-4 mb-5">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="material-symbols-outlined text-primary text-[20px] shrink-0">auto_awesome</span>
+                <span className="text-xs font-bold text-primary uppercase tracking-wider">AI insight summary</span>
               </div>
-              <button className="text-primary text-xs font-semibold hover:underline flex items-center gap-1">
+              <button
+                type="button"
+                onClick={downloadSummary}
+                disabled={!executiveSummary && !keyPoints.length}
+                className="text-primary text-xs font-semibold hover:underline flex items-center gap-1 shrink-0 disabled:opacity-40"
+              >
                 <span className="material-symbols-outlined text-[16px]">download</span>
-                Download Summary
+                Download
               </button>
             </div>
 
-            <div className="border-l-2 border-primary-fixed pl-4 mb-4">
-              <h4 className="text-sm font-semibold text-on-surface mb-1">Executive Summary</h4>
-              <p className="text-sm text-on-surface-variant leading-relaxed">
-                This MSA outlines the standard engagement framework for LexAgile Systems and Global FinTech Solutions. Key risks involve strict payment terms and limited liability clauses.
+            <div className="border-l-2 border-primary pl-4 mb-5">
+              <h4 className="text-sm font-semibold text-on-surface mb-2">Executive summary</h4>
+              <p
+                className="text-sm text-on-surface-variant leading-relaxed"
+                style={{ width: "100%", wordBreak: "normal" }}
+              >
+                {executiveSummary || (isLoading ? "Generating summary..." : "Upload a document to generate a summary.")}
               </p>
             </div>
 
-            <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-3">Key Provisions</p>
+            <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-3">
+              Key provisions
+            </p>
             <div className="space-y-3">
-              {[
-                { title: "Payment Terms:", desc: "Net-30 day cycle with a 1.5% monthly penalty for late payments." },
-                { title: "Termination:", desc: "Flexible termination for convenience requiring 60-day written notice." },
-                { title: "Liability:", desc: "Mutual exclusion of indirect and consequential damages." },
-              ].map((item, i) => (
-                <div key={i} className="flex items-start gap-2">
-                  <span className="material-symbols-outlined text-success text-[18px] mt-0.5">check_circle</span>
-                  <p className="text-sm text-on-surface">
-                    <strong>{item.title}</strong> {item.desc}
-                  </p>
-                </div>
-              ))}
+              {keyPoints.length > 0 ? (
+                keyPoints.map((point, i) => (
+                  <div key={i} className="flex items-start gap-2">
+                    <span className="material-symbols-outlined text-success text-[18px] mt-0.5 shrink-0">check_circle</span>
+                    <p className="text-sm text-on-surface leading-relaxed flex-1 min-w-0">{point}</p>
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-on-surface-variant">
+                  {isLoading ? "Extracting key points..." : "Key points will appear here after summarization."}
+                </p>
+              )}
             </div>
           </div>
         </div>

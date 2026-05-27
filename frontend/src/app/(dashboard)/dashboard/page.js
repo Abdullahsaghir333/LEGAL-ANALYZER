@@ -1,42 +1,48 @@
 "use client";
 
 import { KpiCard, Button } from "@/components/ui";
+import { useDashboard, useRevenue } from "@/hooks/useDashboard";
 
-const recentActivity = [
-  {
-    icon: "description",
-    title: "Contract Signed: Project Aether",
-    subtitle: "M&A Agreement between TechCorp and SoftSystems",
-    time: "Just now",
-    tag: "Legal Tech",
-    tagColor: "bg-primary-fixed/40 text-primary",
-  },
-  {
-    icon: "receipt_long",
-    title: "Invoice Generated: #INV-2024-089",
-    subtitle: "Client: Global Logistics Partners • Rs. 14,200.00",
-    time: "2 hours ago",
-    tag: "Billing",
-    tagColor: "bg-warning-light text-warning",
-  },
-  {
-    icon: "person_add",
-    title: "New Client Onboarded: Solar-Edge Ventures",
-    subtitle: "Assigned Partner: David Chen",
-    time: "5 hours ago",
-    tag: "Client Relation",
-    tagColor: "bg-success-light text-success",
-  },
-];
+function SkeletonCard() {
+  return (
+    <div className="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant/30 shadow-card animate-pulse">
+      <div className="h-4 w-20 bg-surface-container-high rounded mb-4"></div>
+      <div className="h-8 w-32 bg-surface-container-high rounded mb-2"></div>
+      <div className="h-4 w-16 bg-surface-container-high rounded"></div>
+    </div>
+  );
+}
 
-const caseActivity = [
-  { label: "Corporate Law", value: 65, color: "bg-primary-container" },
-  { label: "Intellectual Property", value: 42, color: "bg-primary-container/70" },
-  { label: "Real Estate", value: 28, color: "bg-primary-container/40" },
-  { label: "Litigation", value: 15, color: "bg-primary-fixed" },
-];
+function SkeletonActivity() {
+  return (
+    <div className="px-8 py-4 flex items-center gap-6">
+      <div className="w-12 h-12 rounded-xl bg-surface-container-high animate-pulse"></div>
+      <div className="flex-1 min-w-0">
+        <div className="h-4 w-48 bg-surface-container-high rounded mb-2"></div>
+        <div className="h-3 w-64 bg-surface-container-high rounded"></div>
+      </div>
+    </div>
+  );
+}
 
 export default function DashboardPage() {
+  const { data: dashboard, isLoading: dashboardLoading, error: dashboardError } = useDashboard();
+  const { data: revenue, isLoading: revenueLoading } = useRevenue(6);
+
+  const monthlyRevenue = revenue?.monthlyRevenue ?? [];
+  const totalEarnings =
+    revenue?.kpis?.totalRevenue ??
+    monthlyRevenue.reduce((sum, item) => sum + (item.revenue || 0), 0);
+
+  const maxMonthRevenue = Math.max(1, ...monthlyRevenue.map((m) => m.revenue || 0));
+
+  const caseActivity = [
+    { label: "Corporate Law", value: 65, color: "bg-primary-container" },
+    { label: "Intellectual Property", value: 42, color: "bg-primary-container/70" },
+    { label: "Real Estate", value: 28, color: "bg-primary-container/40" },
+    { label: "Litigation", value: 15, color: "bg-primary-fixed" },
+  ];
+
   return (
     <div className="p-6 lg:p-8 max-w-7xl mx-auto space-y-8 animate-fade-in">
       {/* Welcome Header */}
@@ -61,33 +67,47 @@ export default function DashboardPage() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <KpiCard
-          icon="payments"
-          iconBg="bg-primary-fixed/30"
-          iconColor="text-primary"
-          label="Total Earnings"
-          value="Rs. 428,500.00"
-          badge="+12.5%"
-          badgeColor="bg-success-light text-success"
-        />
-        <KpiCard
-          icon="business_center"
-          iconBg="bg-warning-light"
-          iconColor="text-warning"
-          label="Active Cases"
-          value="42"
-          badge="Steady"
-          badgeColor="bg-surface-container-high text-on-surface-variant"
-        />
-        <KpiCard
-          icon="pending_actions"
-          iconBg="bg-error-container/50"
-          iconColor="text-error"
-          label="Pending Invoices"
-          value="Rs. 12,450.00"
-          badge="14 Overdue"
-          badgeColor="bg-error-container text-error"
-        />
+        {dashboardLoading ? (
+          <>
+            <SkeletonCard />
+            <SkeletonCard />
+            <SkeletonCard />
+          </>
+        ) : dashboardError ? (
+          <div className="col-span-3 bg-error-container p-6 rounded-xl text-error">
+            Failed to load dashboard data. Please try again.
+          </div>
+        ) : (
+          <>
+            <KpiCard
+              icon="payments"
+              iconBg="bg-primary-fixed/30"
+              iconColor="text-primary"
+              label="Total Earnings"
+              value={`Rs. ${totalEarnings.toLocaleString()}.00`}
+              badge="+12.5%"
+              badgeColor="bg-success-light text-success"
+            />
+            <KpiCard
+              icon="business_center"
+              iconBg="bg-warning-light"
+              iconColor="text-warning"
+              label="Active Cases"
+              value={dashboard?.activeCases?.toString() || "0"}
+              badge="Steady"
+              badgeColor="bg-surface-container-high text-on-surface-variant"
+            />
+            <KpiCard
+              icon="pending_actions"
+              iconBg="bg-error-container/50"
+              iconColor="text-error"
+              label="Pending Invoices"
+              value={dashboard?.unpaidInvoices?.toString() || "0"}
+              badge="Overdue"
+              badgeColor="bg-error-container text-error"
+            />
+          </>
+        )}
 
         {/* Quick Actions */}
         <div className="bg-primary-container p-6 rounded-xl shadow-elevated flex flex-col gap-3">
@@ -96,7 +116,7 @@ export default function DashboardPage() {
           </p>
           <button className="w-full py-2.5 bg-white/10 hover:bg-white/20 text-on-primary rounded-lg text-sm font-medium flex items-center gap-3 px-3 transition-colors">
             <span className="material-symbols-outlined text-[18px]">upload_file</span>
-            Upload contract
+            Upload document
           </button>
           <button className="w-full py-2.5 bg-white/10 hover:bg-white/20 text-on-primary rounded-lg text-sm font-medium flex items-center gap-3 px-3 transition-colors">
             <span className="material-symbols-outlined text-[18px]">add_task</span>
@@ -126,25 +146,43 @@ export default function DashboardPage() {
 
           {/* Chart */}
           <div className="h-64 flex flex-col justify-end relative">
-            <div className="absolute inset-0 flex flex-col justify-between py-2">
-              {[...Array(4)].map((_, i) => (
-                <div key={i} className="border-b border-surface-container-high/60 w-full h-0" />
-              ))}
-            </div>
-            <div className="flex items-end justify-between h-full relative z-10 px-4">
-              <svg className="absolute bottom-0 left-0 w-full h-full" preserveAspectRatio="none" viewBox="0 0 100 100">
-                <defs>
-                  <linearGradient id="chartGrad" x1="0" x2="0" y1="0" y2="1">
-                    <stop offset="0%" stopColor="#4f46e5" />
-                    <stop offset="100%" stopColor="transparent" />
-                  </linearGradient>
-                </defs>
-                <path d="M0,80 Q10,75 20,60 T40,40 T60,50 T80,20 T100,30" fill="none" stroke="#4f46e5" strokeWidth="2" vectorEffect="non-scaling-stroke" />
-                <path d="M0,80 Q10,75 20,60 T40,40 T60,50 T80,20 T100,30 L100,100 L0,100 Z" fill="url(#chartGrad)" opacity="0.1" />
-              </svg>
-            </div>
+            {revenueLoading ? (
+              <div className="flex items-end justify-between h-full px-4 gap-2">
+                {[...Array(6)].map((_, i) => (
+                  <div key={i} className="flex-1 bg-surface-container-high animate-pulse rounded-t" style={{ height: '30%' }}></div>
+                ))}
+              </div>
+            ) : monthlyRevenue.length > 0 ? (
+              <>
+                <div className="absolute inset-0 flex flex-col justify-between py-2 pointer-events-none">
+                  {[...Array(4)].map((_, i) => (
+                    <div key={i} className="border-b border-surface-container-high/60 w-full h-0" />
+                  ))}
+                </div>
+                <div className="flex items-end justify-between h-full relative z-10 px-4 gap-2">
+                  {monthlyRevenue.map((item) => (
+                    <div
+                      key={item.month}
+                      className="flex-1 bg-primary rounded-t-sm transition-all duration-500 min-h-[4px]"
+                      style={{ height: `${((item.revenue || 0) / maxMonthRevenue) * 100}%` }}
+                      title={`${item.month}: Rs. ${(item.revenue || 0).toLocaleString()}`}
+                    />
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div className="h-full flex items-center justify-center text-sm text-on-surface-variant">
+                No paid revenue in the last 6 months yet.
+              </div>
+            )}
             <div className="flex justify-between mt-4 px-2 text-[11px] font-medium text-outline">
-              <span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span><span>May</span><span>Jun</span>
+              {monthlyRevenue.length > 0 ? (
+                monthlyRevenue.map((item) => (
+                  <span key={item.month} className="flex-1 text-center">{item.month}</span>
+                ))
+              ) : (
+                <><span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span><span>May</span><span>Jun</span></>
+              )}
             </div>
           </div>
         </div>
@@ -186,26 +224,34 @@ export default function DashboardPage() {
           <button className="text-primary text-sm font-semibold hover:underline">View All</button>
         </div>
         <div className="divide-y divide-outline-variant/10">
-          {recentActivity.map((item, i) => (
-            <div
-              key={i}
-              className="px-8 py-4 flex items-center gap-6 hover:bg-surface-container-low/50 transition-colors cursor-pointer"
-            >
-              <div className="w-12 h-12 rounded-xl bg-surface-container-low flex items-center justify-center shrink-0">
-                <span className="material-symbols-outlined text-on-surface-variant">{item.icon}</span>
+          {dashboardLoading ? (
+            [...Array(3)].map((_, i) => <SkeletonActivity key={i} />)
+          ) : dashboard?.recentActivity?.length > 0 ? (
+            dashboard.recentActivity.map((item, i) => (
+              <div
+                key={i}
+                className="px-8 py-4 flex items-center gap-6 hover:bg-surface-container-low/50 transition-colors cursor-pointer"
+              >
+                <div className="w-12 h-12 rounded-xl bg-surface-container-low flex items-center justify-center shrink-0">
+                  <span className="material-symbols-outlined text-on-surface-variant">{item.icon}</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-on-surface truncate">{item.title}</p>
+                  <p className="text-xs text-on-surface-variant truncate">{item.subtitle}</p>
+                </div>
+                <div className="text-right hidden sm:block shrink-0">
+                  <p className="text-sm font-medium text-on-surface">{item.time}</p>
+                  <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase ${item.tagColor}`}>
+                    {item.tag}
+                  </span>
+                </div>
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-on-surface truncate">{item.title}</p>
-                <p className="text-xs text-on-surface-variant truncate">{item.subtitle}</p>
-              </div>
-              <div className="text-right hidden sm:block shrink-0">
-                <p className="text-sm font-medium text-on-surface">{item.time}</p>
-                <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase ${item.tagColor}`}>
-                  {item.tag}
-                </span>
-              </div>
+            ))
+          ) : (
+            <div className="px-8 py-8 text-center text-on-surface-variant">
+              No recent activity found.
             </div>
-          ))}
+          )}
         </div>
       </div>
     </div>

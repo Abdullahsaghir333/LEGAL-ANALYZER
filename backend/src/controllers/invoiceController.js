@@ -63,3 +63,38 @@ export const getInvoiceById = asyncHandler(async (req, res) => {
     throw new Error('Invoice not found or unauthorized');
   }
 });
+
+// @desc    Update invoice (e.g. status)
+// @route   PATCH /api/invoices/:id
+// @access  Private
+export const updateInvoice = asyncHandler(async (req, res) => {
+  const invoice = await Invoice.findById(req.params.id).populate('client_id');
+
+  if (!invoice || invoice.client_id.user_id.toString() !== req.user._id.toString()) {
+    res.status(404);
+    throw new Error('Invoice not found or unauthorized');
+  }
+
+  const allowed = ['status'];
+  for (const key of allowed) {
+    if (req.body[key] !== undefined) invoice[key] = req.body[key];
+  }
+
+  const updated = await invoice.save();
+  res.json(updated);
+});
+
+// @desc    Delete invoice
+// @route   DELETE /api/invoices/:id
+// @access  Private
+export const deleteInvoiceById = asyncHandler(async (req, res) => {
+  const invoice = await Invoice.findById(req.params.id).populate('client_id');
+
+  if (!invoice || invoice.client_id.user_id.toString() !== req.user._id.toString()) {
+    res.status(404);
+    throw new Error('Invoice not found or unauthorized');
+  }
+
+  await invoice.deleteOne();
+  res.json({ message: 'Invoice removed' });
+});

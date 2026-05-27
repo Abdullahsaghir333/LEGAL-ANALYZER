@@ -1,10 +1,31 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function TopBar() {
   const [searchFocused, setSearchFocused] = useState(false);
+  const [userName, setUserName] = useState("User");
+  const router = useRouter();
+
+  useEffect(() => {
+    const userInfo = JSON.parse(localStorage.getItem("userInfo") || "{}");
+    if (userInfo?.name) {
+      setUserName(userInfo.name);
+    }
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      await fetch("http://localhost:5000/api/users/logout", { method: "POST", credentials: "include" });
+    } catch (e) {
+      console.error(e);
+    }
+    localStorage.removeItem("userInfo");
+    localStorage.removeItem("token");
+    router.push("/login");
+  };
 
   return (
     <header
@@ -62,13 +83,20 @@ export default function TopBar() {
           className="flex items-center gap-3 p-1.5 pr-3 rounded-full
             hover:bg-surface-container-low transition-colors cursor-pointer"
         >
-          <div className="w-8 h-8 rounded-full bg-primary-container flex items-center justify-center text-on-primary text-xs font-bold">
-            MS
+          <div className="w-8 h-8 rounded-full bg-primary-container flex items-center justify-center text-on-primary text-xs font-bold uppercase">
+            {userName.substring(0, 2)}
           </div>
           <span className="text-sm font-semibold text-on-surface hidden lg:block">
-            Marcus Sterling
+            {userName}
           </span>
         </Link>
+        <button
+          onClick={handleLogout}
+          className="p-2.5 text-error hover:bg-error/10 rounded-full transition-colors flex items-center"
+          title="Logout"
+        >
+          <span className="material-symbols-outlined text-[22px]">logout</span>
+        </button>
       </div>
     </header>
   );

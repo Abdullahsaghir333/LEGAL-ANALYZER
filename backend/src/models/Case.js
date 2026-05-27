@@ -8,6 +8,12 @@ const caseSchema = new mongoose.Schema(
       ref: 'Client',
       index: true,
     },
+    lawyer_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+      ref: 'User',
+      index: true,
+    },
     title: {
       type: String,
       required: true,
@@ -25,6 +31,20 @@ const caseSchema = new mongoose.Schema(
       enum: ['low', 'medium', 'high'],
       default: 'medium',
     },
+    updates: [
+      {
+        date: { type: Date, default: Date.now },
+        description: String,
+        priority: { type: String, enum: ['low', 'medium', 'high'], default: 'low' },
+      }
+    ],
+    messages: [
+      {
+        sender_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+        text: { type: String, required: true },
+        created_at: { type: Date, default: Date.now }
+      }
+    ]
   },
   {
     timestamps: true,
